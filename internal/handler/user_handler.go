@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	models "github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/model"
+	models "github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/models"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/repository"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/service"
 )
@@ -22,11 +22,11 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var creds models.UserCreds
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if creds.Login == "" || creds.Password == "" {
-		http.Error(w, "bad request: missing login or password", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -34,10 +34,10 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var dupErr *repository.DuplicateError
 		if errors.As(err, &dupErr) {
-			http.Error(w, err.Error(), http.StatusConflict)
+			w.WriteHeader(http.StatusConflict)
 			return
 		}
-		http.Error(w, "server error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -48,17 +48,17 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var creds models.UserCreds
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	if creds.Login == "" || creds.Password == "" {
-		http.Error(w, "bad request: missing login or password", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	token, err := h.svc.Login(ctx, creds.Login, creds.Password)
 	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 

@@ -76,14 +76,17 @@ func Run() error {
 		return err
 	}
 
-	repo, err := repository.NewRepo(pool)
+	repo, err := repository.NewUserRepo(pool)
 	if err != nil {
 		return err
 	}
 	jwtSvc := auth.NewJWTService([]byte(jwt))
 	userSrc := service.NewUserService(repo, jwtSvc)
 
-	handler := handler.NewGopherMartHandler(userSrc, jwtSvc, sugar)
+	orderRepo := repository.NewOrderRepo(pool)
+	orderSvc := service.NewOrderService(orderRepo)
+
+	handler := handler.NewGopherMartHandler(userSrc, orderSvc, jwtSvc, sugar)
 	server := &http.Server{
 		Addr:    serAdr,
 		Handler: handler.Routes(),

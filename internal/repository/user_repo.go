@@ -7,17 +7,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/models"
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, user *User) error
-	GetByLogin(ctx context.Context, login string) (*User, error)
-}
-
-type User struct {
-	ID           string
-	Login        string
-	PasswordHash string
+	CreateUser(ctx context.Context, user *models.User) error
+	GetByLogin(ctx context.Context, login string) (*models.User, error)
 }
 
 type UserRepo struct {
@@ -32,7 +27,7 @@ func (e *DuplicateError) Error() string {
 	return fmt.Sprintf("login already exists: %s", e.Login)
 }
 
-func NewRepo(db *pgxpool.Pool) (*UserRepo, error) {
+func NewUserRepo(db *pgxpool.Pool) (*UserRepo, error) {
 	repo := &UserRepo{}
 	if db != nil {
 		repo.db = db
@@ -40,7 +35,7 @@ func NewRepo(db *pgxpool.Pool) (*UserRepo, error) {
 	return repo, nil
 }
 
-func (r *UserRepo) CreateUser(ctx context.Context, user *User) error {
+func (r *UserRepo) CreateUser(ctx context.Context, user *models.User) error {
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO users (id, login, password_hash) VALUES ($1, $2, $3)`,
 		user.ID, user.Login, user.PasswordHash,
@@ -56,8 +51,8 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (r *UserRepo) GetByLogin(ctx context.Context, login string) (*User, error) {
-	u := &User{}
+func (r *UserRepo) GetByLogin(ctx context.Context, login string) (*models.User, error) {
+	u := &models.User{}
 	err := r.db.QueryRow(ctx,
 		`SELECT id, password_hash FROM users WHERE login=$1`,
 		login,

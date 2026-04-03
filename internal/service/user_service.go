@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/auth"
+	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/models"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -28,7 +29,7 @@ func (s *UserService) Register(ctx context.Context, login, password string) (str
 		return "", err
 	}
 
-	user := &repository.User{
+	user := &models.User{
 		ID:           uuid.NewString(),
 		Login:        login,
 		PasswordHash: string(hash),

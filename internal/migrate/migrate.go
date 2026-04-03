@@ -39,7 +39,15 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool, sugar *zap.SugaredLogger) 
 		sugar.Errorln("Migrations failed", err)
 		return err
 	}
-	m.Up()
-	sugar.Infow("Migrations applied")
+	if err := m.Up(); err != nil {
+		if !errors.Is(err, migrate.ErrNoChange) {
+			sugar.Errorln("Migration failed:", err)
+			return fmt.Errorf("migration failed: %w", err)
+		}
+		sugar.Infow("No migration changes to apply")
+	} else {
+		sugar.Infow("Migrations applied successfully")
+	}
+
 	return nil
 }
