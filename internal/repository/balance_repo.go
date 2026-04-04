@@ -139,7 +139,6 @@ func (r *BalanceRepo) ApplyAccrual(ctx context.Context, o models.BalanceOrder, a
 		_, err = tx.Exec(ctx, `
 			INSERT INTO balance_transactions (transaction_id, order_id, user_id, amount)
 			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (order_id) DO NOTHING
 		`, o.TransactionID, o.OrderID, o.UserID, o.Sum)
 		if err != nil {
 			return err
