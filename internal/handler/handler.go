@@ -11,18 +11,21 @@ import (
 )
 
 type GopherMartHandler struct {
-	userSvc  *service.UserService
-	orderSvc *service.OrderService
-	jwtSvc   *auth.JWTService
-	log      *zap.SugaredLogger
+	userSvc    *service.UserService
+	orderSvc   *service.OrderService
+	balanceSvc *service.BalanceService
+	jwtSvc     *auth.JWTService
+	log        *zap.SugaredLogger
 }
 
-func NewGopherMartHandler(userSvc *service.UserService, orderSvc *service.OrderService, jwtSvc *auth.JWTService, log *zap.SugaredLogger) *GopherMartHandler {
+func NewGopherMartHandler(userSvc *service.UserService, orderSvc *service.OrderService,
+	balanceSvc *service.BalanceService, jwtSvc *auth.JWTService, log *zap.SugaredLogger) *GopherMartHandler {
 	return &GopherMartHandler{
-		userSvc:  userSvc,
-		orderSvc: orderSvc,
-		jwtSvc:   jwtSvc,
-		log:      log,
+		userSvc:    userSvc,
+		orderSvc:   orderSvc,
+		balanceSvc: balanceSvc,
+		jwtSvc:     jwtSvc,
+		log:        log,
 	}
 }
 
@@ -37,12 +40,36 @@ func (h *GopherMartHandler) Routes() http.Handler {
 	})
 
 	orderHandler := NewOrderHandler(h.orderSvc)
+	balanceHandler := NewBalanceHandler(h.balanceSvc)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.JWTMiddleware(h.jwtSvc, h.log))
 		r.Post("/api/user/orders", orderHandler.AddOrder)
 		r.Get("/api/user/orders", orderHandler.GetOrders)
+		r.Get("/api/user/balance", balanceHandler.GetBalance)
+		r.Get("/api/user/withdrawals", balanceHandler.GetWithdrawals)
+		r.Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
 	})
+
+	// r.Route("/api/user", func(r chi.Router) {
+	// 	// Публичные роуты (без JWT)
+	// 	r.Group(func(r chi.Router) {
+	// 		r.Post("/register", userHandler.Register)
+	// 		r.Post("/login", userHandler.Login)
+	// 	})
+
+	// 	// Защищённые роуты (JWT middleware)
+	// 	r.Group(func(r chi.Router) {
+	// 		r.Use(auth.JWTMiddleware(h.jwtSvc, h.log))
+
+	// 		r.Post("/orders", orderHandler.AddOrder)
+	// 		r.Get("/orders", orderHandler.GetOrders)
+
+	// 		r.Get("/balance", balanceHandler.GetBalance)
+	// 		r.Post("/balance/withdraw", balanceHandler.Withdraw)
+	// 		r.Get("/withdrawals", balanceHandler.GetWithdrawals)
+	// 	})
+	// })
 
 	return r
 }

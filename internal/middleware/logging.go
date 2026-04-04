@@ -19,6 +19,21 @@ type (
 	}
 )
 
+func (r *responseWriter) Write(b []byte) (int, error) {
+	// Если статус ещё не установлен — устанавливаем 200 (по умолчанию)
+	if r.responseData.status == 0 {
+		r.responseData.status = http.StatusOK
+	}
+	size, err := r.ResponseWriter.Write(b)
+	r.responseData.size += size
+	return size, err
+}
+
+func (r *responseWriter) WriteHeader(statusCode int) {
+	r.responseData.status = statusCode
+	r.ResponseWriter.WriteHeader(statusCode)
+}
+
 func WithLogging(logger *zap.SugaredLogger) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

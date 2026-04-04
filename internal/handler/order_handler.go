@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/apperrors"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/auth"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/service"
 )
@@ -47,11 +48,11 @@ func (h *OrderHandler) AddOrder(w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case nil:
 		w.WriteHeader(http.StatusAccepted) // 202
-	case service.ErrOrderAlreadyExistsForUser:
+	case apperrors.ErrOrderAlreadyExistsForUser:
 		w.WriteHeader(http.StatusOK) // 200
-	case service.ErrOrderAlreadyExistsOtherUser:
+	case apperrors.ErrOrderAlreadyExistsOtherUser:
 		w.WriteHeader(http.StatusConflict) // 409
-	case service.ErrInvalidOrderNumber:
+	case apperrors.ErrInvalidOrderNumber:
 		w.WriteHeader(http.StatusUnprocessableEntity) // 422
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

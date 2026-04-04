@@ -6,7 +6,7 @@ type UserCreds struct {
 }
 
 type User struct {
-	ID           string
+	UserID       string
 	Login        string
 	PasswordHash string
 }

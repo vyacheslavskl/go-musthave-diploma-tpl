@@ -37,8 +37,8 @@ func NewUserRepo(db *pgxpool.Pool) (*UserRepo, error) {
 
 func (r *UserRepo) CreateUser(ctx context.Context, user *models.User) error {
 	_, err := r.db.Exec(ctx,
-		`INSERT INTO users (id, login, password_hash) VALUES ($1, $2, $3)`,
-		user.ID, user.Login, user.PasswordHash,
+		`INSERT INTO users (user_id, login, password_hash) VALUES ($1, $2, $3)`,
+		user.UserID, user.Login, user.PasswordHash,
 	)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -54,9 +54,9 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *models.User) error {
 func (r *UserRepo) GetByLogin(ctx context.Context, login string) (*models.User, error) {
 	u := &models.User{}
 	err := r.db.QueryRow(ctx,
-		`SELECT id, password_hash FROM users WHERE login=$1`,
+		`SELECT user_id, password_hash FROM users WHERE login=$1`,
 		login,
-	).Scan(&u.ID, &u.PasswordHash)
+	).Scan(&u.UserID, &u.PasswordHash)
 
 	if err != nil {
 		return nil, err

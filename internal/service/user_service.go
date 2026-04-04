@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,7 +18,7 @@ type UserService struct {
 	jwt  *auth.JWTService
 }
 
-func NewUserService(repo *repository.UserRepo, jwt *auth.JWTService) *UserService {
+func NewUserService(repo repository.UserRepository, jwt *auth.JWTService) *UserService {
 	return &UserService{repo: repo, jwt: jwt}
 }
 
@@ -30,7 +29,7 @@ func (s *UserService) Register(ctx context.Context, login, password string) (str
 	}
 
 	user := &models.User{
-		ID:           uuid.NewString(),
+		UserID:       uuid.NewString(),
 		Login:        login,
 		PasswordHash: string(hash),
 	}
@@ -40,7 +39,7 @@ func (s *UserService) Register(ctx context.Context, login, password string) (str
 		return "", err
 	}
 
-	token, err := s.jwt.GenerateToken(user.ID)
+	token, err := s.jwt.GenerateToken(user.UserID)
 	if err != nil {
 		return "", err
 	}
@@ -51,12 +50,12 @@ func (s *UserService) Register(ctx context.Context, login, password string) (str
 func (s *UserService) Login(ctx context.Context, login, password string) (string, error) {
 	user, err := s.repo.GetByLogin(ctx, login)
 	if err != nil {
-		return "", errors.New("unauthorized")
+		return "", err
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
-		return "", errors.New("unauthorized")
+		return "", err
 	}
 
-	return s.jwt.GenerateToken(user.ID)
+	return s.jwt.GenerateToken(user.UserID)
 }
