@@ -67,7 +67,7 @@ func (r *BalanceRepo) GetWithdrawals(ctx context.Context, userID string) ([]mode
 }
 
 // списание
-func (r *BalanceRepo) Withdraw(ctx context.Context, order models.BalanceOrder) error {
+func (r *BalanceRepo) Withdraw(ctx context.Context, o models.BalanceOrder) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (r *BalanceRepo) Withdraw(ctx context.Context, order models.BalanceOrder) e
 		FROM balance_transactions 
 		WHERE user_id = $1
 		FOR UPDATE
-	`, order.UserID)
+	`, o.UserID)
 	if err != nil {
 		return err
 	}
@@ -90,18 +90,18 @@ func (r *BalanceRepo) Withdraw(ctx context.Context, order models.BalanceOrder) e
 		SELECT COALESCE(SUM(amount), 0)
 		FROM balance_transactions
 		WHERE user_id = $1
-	`, order.UserID).Scan(&balance)
+	`, o.UserID).Scan(&balance)
 	if err != nil {
 		return err
 	}
 
-	if balance < order.Sum {
+	if balance < o.Sum {
 		return apperrors.ErrInsufficientFunds
 	}
 
 	_, err = tx.Exec(ctx,
 		`INSERT INTO orders (order_id, user_id, number) VALUES ($1, $2, $3)`,
-		order.OrderID, order.UserID, order.Number,
+		o.OrderID, o.UserID, o.Number,
 	)
 	if err != nil {
 		return err
@@ -110,9 +110,40 @@ func (r *BalanceRepo) Withdraw(ctx context.Context, order models.BalanceOrder) e
 	_, err = tx.Exec(ctx, `
 		INSERT INTO balance_transactions (transaction_id, order_id, user_id, amount)
 		VALUES ($1, $2, $3, $4)
-	`, order.TransactionID, order.OrderID, order.UserID, -order.Sum)
+	`, o.TransactionID, o.OrderID, o.UserID, -o.Sum)
 	if err != nil {
 		return err
+	}
+
+	return tx.Commit(ctx)
+}
+
+func (r *BalanceRepo) ApplyAccrual(ctx context.Context, o models.BalanceOrder, applyAmount bool) error {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	// обновление заказа
+	_, err = tx.Exec(ctx, `
+		UPDATE orders
+		SET status = $1, accrual = $2
+		WHERE order_id = $3
+	`, o.Status, o.Sum, o.OrderID)
+	if err != nil {
+		return err
+	}
+
+	if applyAmount {
+		_, err = tx.Exec(ctx, `
+			INSERT INTO balance_transactions (transaction_id, order_id, user_id, amount)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (order_id) DO NOTHING
+		`, o.TransactionID, o.OrderID, o.UserID, o.Sum)
+		if err != nil {
+			return err
+		}
 	}
 
 	return tx.Commit(ctx)

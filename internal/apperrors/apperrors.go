@@ -9,4 +9,6 @@ var (
 	ErrInvalidOrderNumber          = errors.New("invalid order number")
 	ErrInvalidSum                  = errors.New("invalid sum")
 	ErrInsufficientFunds           = errors.New("insufficient funds")
+	ErrTooManyRequests             = errors.New("too many requests")
+	ErrOrderNotFound               = errors.New("order not found")
 )

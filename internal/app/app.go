@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/accrual"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/auth"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/handler"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/migrate"
@@ -108,6 +109,11 @@ func Run() error {
 
 	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	accrualClient := accrual.NewClient(accAdr)
+	accrualWorker := accrual.NewWorker(orderRepo, balanceRepo, accrualClient, sugar)
+
+	go accrualWorker.Run(stopCtx, 5) // 5 воркеров
 
 	select {
 	case <-stopCtx.Done():

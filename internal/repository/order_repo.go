@@ -13,6 +13,7 @@ type OrderRepository interface {
 	Create(ctx context.Context, order models.Order) error
 	ListByUser(ctx context.Context, userID string) ([]models.Order, error)
 	GetUserByOrder(ctx context.Context, number string) (string, error)
+	GetPendingOrders(ctx context.Context) ([]models.Order, error)
 }
 
 type OrderRepo struct {
@@ -69,6 +70,31 @@ func (r *OrderRepo) ListByUser(ctx context.Context, userID string) ([]models.Ord
 			return nil, err
 		}
 		o.Accrual = accrual
+		orders = append(orders, o)
+	}
+	return orders, nil
+}
+
+func (r *OrderRepo) GetPendingOrders(ctx context.Context) ([]models.Order, error) {
+	rows, err := r.db.Query(ctx, `
+		SELECT order_id, user_id, number, status, accrual, created_at
+		FROM orders
+		WHERE status IN ('NEW', 'PROCESSING')
+		ORDER BY created_at
+		LIMIT 100
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var o models.Order
+		err := rows.Scan(&o.OrderID, &o.UserID, &o.Number, &o.Status, &o.Accrual, &o.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
 		orders = append(orders, o)
 	}
 	return orders, nil
