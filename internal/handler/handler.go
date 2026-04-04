@@ -34,42 +34,28 @@ func (h *GopherMartHandler) Routes() http.Handler {
 	r.Use(middleware.WithLogging(h.log))
 
 	userHandler := NewUserHandler(h.userSvc)
-	r.Group(func(r chi.Router) {
-		r.Post("/api/user/register", userHandler.Register)
-		r.Post("/api/user/login", userHandler.Login)
-	})
-
 	orderHandler := NewOrderHandler(h.orderSvc)
 	balanceHandler := NewBalanceHandler(h.balanceSvc)
 
-	r.Group(func(r chi.Router) {
-		r.Use(auth.JWTMiddleware(h.jwtSvc, h.log))
-		r.Post("/api/user/orders", orderHandler.AddOrder)
-		r.Get("/api/user/orders", orderHandler.GetOrders)
-		r.Get("/api/user/balance", balanceHandler.GetBalance)
-		r.Get("/api/user/withdrawals", balanceHandler.GetWithdrawals)
-		r.Post("/api/user/balance/withdraw", balanceHandler.Withdraw)
+	r.Route("/api/user", func(r chi.Router) {
+		// Публичные роуты (без JWTMiddleware)
+		r.Group(func(r chi.Router) {
+			r.Post("/register", userHandler.Register)
+			r.Post("/login", userHandler.Login)
+		})
+
+		// Защищённые роуты (JWT middleware)
+		r.Group(func(r chi.Router) {
+			r.Use(auth.JWTMiddleware(h.jwtSvc, h.log))
+
+			r.Post("/orders", orderHandler.AddOrder)
+			r.Get("/orders", orderHandler.GetOrders)
+
+			r.Get("/balance", balanceHandler.GetBalance)
+			r.Post("/balance/withdraw", balanceHandler.Withdraw)
+			r.Get("/withdrawals", balanceHandler.GetWithdrawals)
+		})
 	})
-
-	// r.Route("/api/user", func(r chi.Router) {
-	// 	// Публичные роуты (без JWT)
-	// 	r.Group(func(r chi.Router) {
-	// 		r.Post("/register", userHandler.Register)
-	// 		r.Post("/login", userHandler.Login)
-	// 	})
-
-	// 	// Защищённые роуты (JWT middleware)
-	// 	r.Group(func(r chi.Router) {
-	// 		r.Use(auth.JWTMiddleware(h.jwtSvc, h.log))
-
-	// 		r.Post("/orders", orderHandler.AddOrder)
-	// 		r.Get("/orders", orderHandler.GetOrders)
-
-	// 		r.Get("/balance", balanceHandler.GetBalance)
-	// 		r.Post("/balance/withdraw", balanceHandler.Withdraw)
-	// 		r.Get("/withdrawals", balanceHandler.GetWithdrawals)
-	// 	})
-	// })
 
 	return r
 }
