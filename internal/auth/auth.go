@@ -8,11 +8,16 @@ import (
 
 const TokenExp = time.Hour * 12
 
+type JWTServiceInterface interface {
+	GenerateToken(userID string) (string, error)
+	GetUserID(tokenString string) (string, error)
+}
+
 type JWTService struct {
 	SecretKey []byte
 }
 
-func NewJWTService(key []byte) *JWTService {
+func NewJWTService(key []byte) JWTServiceInterface {
 	return &JWTService{SecretKey: key}
 }
 

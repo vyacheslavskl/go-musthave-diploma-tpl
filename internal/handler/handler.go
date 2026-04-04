@@ -11,15 +11,15 @@ import (
 )
 
 type GopherMartHandler struct {
-	userSvc    *service.UserService
-	orderSvc   *service.OrderService
-	balanceSvc *service.BalanceService
-	jwtSvc     *auth.JWTService
+	userSvc    service.UserServicer
+	orderSvc   service.OrderServicer
+	balanceSvc service.BalanceServicer
+	jwtSvc     auth.JWTServiceInterface
 	log        *zap.SugaredLogger
 }
 
-func NewGopherMartHandler(userSvc *service.UserService, orderSvc *service.OrderService,
-	balanceSvc *service.BalanceService, jwtSvc *auth.JWTService, log *zap.SugaredLogger) *GopherMartHandler {
+func NewGopherMartHandler(userSvc service.UserServicer, orderSvc service.OrderServicer,
+	balanceSvc service.BalanceServicer, jwtSvc auth.JWTServiceInterface, log *zap.SugaredLogger) *GopherMartHandler {
 	return &GopherMartHandler{
 		userSvc:    userSvc,
 		orderSvc:   orderSvc,

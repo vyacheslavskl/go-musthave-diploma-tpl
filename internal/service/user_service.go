@@ -5,20 +5,26 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/apperrors"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/auth"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/models"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type UserServicer interface {
+	Register(ctx context.Context, login, password string) (string, error)
+	Login(ctx context.Context, login, password string) (string, error)
+}
+
 const TokenExp = time.Hour * 12
 
 type UserService struct {
 	repo repository.UserRepository
-	jwt  *auth.JWTService
+	jwt  auth.JWTServiceInterface
 }
 
-func NewUserService(repo repository.UserRepository, jwt *auth.JWTService) *UserService {
+func NewUserService(repo repository.UserRepository, jwt auth.JWTServiceInterface) UserServicer {
 	return &UserService{repo: repo, jwt: jwt}
 }
 
@@ -54,7 +60,7 @@ func (s *UserService) Login(ctx context.Context, login, password string) (string
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)) != nil {
-		return "", err
+		return "", apperrors.ErrInvalidCredentials
 	}
 
 	return s.jwt.GenerateToken(user.UserID)

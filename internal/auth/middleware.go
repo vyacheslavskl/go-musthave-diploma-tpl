@@ -12,7 +12,7 @@ type contextKey string
 
 const UserIDKey contextKey = "user_id"
 
-func JWTMiddleware(jwt *JWTService, logger *zap.SugaredLogger) func(http.Handler) http.Handler {
+func JWTMiddleware(jwt JWTServiceInterface, logger *zap.SugaredLogger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -28,7 +28,7 @@ func JWTMiddleware(jwt *JWTService, logger *zap.SugaredLogger) func(http.Handler
 				return
 			}
 
-			logger.Infow("existing user", "user_id", userID)
+			logger.Debugw("existing user", "user_id", userID)
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))

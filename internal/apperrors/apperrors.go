@@ -11,4 +11,5 @@ var (
 	ErrInsufficientFunds           = errors.New("insufficient funds")
 	ErrTooManyRequests             = errors.New("too many requests")
 	ErrOrderNotFound               = errors.New("order not found")
+	ErrInvalidCredentials          = errors.New("invalid credentials")
 )

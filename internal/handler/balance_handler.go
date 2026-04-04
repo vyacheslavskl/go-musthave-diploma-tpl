@@ -12,10 +12,10 @@ import (
 )
 
 type BalanceHandler struct {
-	svc *service.BalanceService
+	svc service.BalanceServicer
 }
 
-func NewBalanceHandler(svc *service.BalanceService) *BalanceHandler {
+func NewBalanceHandler(svc service.BalanceServicer) *BalanceHandler {
 	return &BalanceHandler{svc: svc}
 }
 

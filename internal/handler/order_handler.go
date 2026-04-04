@@ -13,7 +13,7 @@ import (
 )
 
 type OrderHandler struct {
-	svc *service.OrderService
+	svc service.OrderServicer
 }
 
 type OrderResponse struct {
@@ -23,7 +23,7 @@ type OrderResponse struct {
 	UploadedAt string   `json:"uploaded_at"`
 }
 
-func NewOrderHandler(svc *service.OrderService) *OrderHandler {
+func NewOrderHandler(svc service.OrderServicer) *OrderHandler {
 	return &OrderHandler{svc: svc}
 }
 
@@ -37,12 +37,16 @@ func (h *OrderHandler) AddOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, err := io.ReadAll(r.Body)
-	if err != nil || len(body) == 0 {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	number := strings.TrimSpace(string(body))
+	if number == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
 	err = h.svc.AddOrder(ctx, userID, number)
 	switch err {

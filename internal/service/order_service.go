@@ -10,11 +10,16 @@ import (
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/utils"
 )
 
+type OrderServicer interface {
+	AddOrder(ctx context.Context, userID, number string) error
+	GetOrders(ctx context.Context, userID string) ([]models.Order, error)
+}
+
 type OrderService struct {
 	repo repository.OrderRepository
 }
 
-func NewOrderService(repo repository.OrderRepository) *OrderService {
+func NewOrderService(repo repository.OrderRepository) OrderServicer {
 	return &OrderService{repo: repo}
 }
 

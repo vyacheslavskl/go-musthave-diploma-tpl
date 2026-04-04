@@ -11,12 +11,18 @@ import (
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/utils"
 )
 
+type BalanceServicer interface {
+	GetBalance(ctx context.Context, userID string) (models.Balance, error)
+	GetWithdrawals(ctx context.Context, userID string) ([]models.Withdrawal, error)
+	Withdraw(ctx context.Context, userID string, req models.WithdrawRequest) error
+}
+
 type BalanceService struct {
 	balanceRepo repository.BalanceRepository
 	orderRepo   repository.OrderRepository
 }
 
-func NewBalanceService(repo repository.BalanceRepository, orderRepo repository.OrderRepository) *BalanceService {
+func NewBalanceService(repo repository.BalanceRepository, orderRepo repository.OrderRepository) BalanceServicer {
 	return &BalanceService{balanceRepo: repo, orderRepo: orderRepo}
 }
 
