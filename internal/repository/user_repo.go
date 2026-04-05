@@ -47,6 +47,7 @@ func (r *UserRepo) CreateUser(ctx context.Context, user *models.User) error {
 				return &DuplicateError{Login: user.Login}
 			}
 		}
+		return err
 	}
 	return nil
 }

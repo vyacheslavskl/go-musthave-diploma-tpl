@@ -68,6 +68,10 @@ func (c *Client) GetAccrualInfo(ctx context.Context, number string) (*Result, er
 
 		return &Result{RetryAfter: retryAfter}, apperrors.ErrTooManyRequests
 
+	case http.StatusInternalServerError:
+		// внутренняя ошибка сервера
+		return nil, apperrors.ErrInternalServer
+
 	default:
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}

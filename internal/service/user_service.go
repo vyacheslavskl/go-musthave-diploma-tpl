@@ -40,7 +40,7 @@ func (s *UserService) Register(ctx context.Context, login, password string) (str
 		PasswordHash: string(hash),
 	}
 
-	err = s.repo.CreateUser(context.TODO(), user)
+	err = s.repo.CreateUser(ctx, user)
 	if err != nil {
 		return "", err
 	}

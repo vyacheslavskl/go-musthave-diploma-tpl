@@ -3,9 +3,10 @@ package accrual
 import (
 	"context"
 	"errors"
-	"sync"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/uuid"
 	"github.com/vyacheslavskl/go-musthave-diploma-tpl/internal/apperrors"
@@ -37,20 +38,25 @@ func NewWorker(
 	}
 }
 
-func (w *Worker) Run(ctx context.Context, concurrency int) {
-	tasks := make(chan models.Order)
+func (w *Worker) Run(ctx context.Context, concurrency int) error {
+	tasks := make(chan models.Order, concurrency*2) // буфер для предотвращения блокировок
+	g, ctx := errgroup.WithContext(ctx)
 
-	var wg sync.WaitGroup
-
-	// workers
-	for i := 0; i < concurrency; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for order := range tasks {
-				w.processOrder(ctx, order)
+	// запуск воркеров
+	for range concurrency {
+		g.Go(func() error {
+			for {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case order, ok := <-tasks:
+					if !ok {
+						return nil
+					}
+					w.processOrder(ctx, order)
+				}
 			}
-		}()
+		})
 	}
 
 	ticker := time.NewTicker(5 * time.Second)
@@ -59,10 +65,8 @@ func (w *Worker) Run(ctx context.Context, concurrency int) {
 	for {
 		select {
 		case <-ctx.Done():
-			close(tasks)
-			wg.Wait()
-			w.log.Info("worker stopped")
-			return
+			close(tasks) // закрываем канал один раз
+			return g.Wait()
 
 		case <-ticker.C:
 			orders, err := w.orderRepo.GetPendingOrders(ctx)
@@ -76,15 +80,14 @@ func (w *Worker) Run(ctx context.Context, concurrency int) {
 				case tasks <- o:
 				case <-ctx.Done():
 					close(tasks)
-					wg.Wait()
-					return
+					return g.Wait()
 				}
 			}
 		}
 	}
 }
 
-func (w *Worker) processOrder(ctx context.Context, order models.Order) {
+func (w *Worker) processOrder(ctx context.Context, order models.Order) error {
 	w.waitIfPaused()
 
 	res, err := w.client.GetAccrualInfo(ctx, order.Number)
@@ -93,19 +96,21 @@ func (w *Worker) processOrder(ctx context.Context, order models.Order) {
 		switch {
 		case errors.Is(err, apperrors.ErrOrderNotFound):
 			w.log.Infof("order not registered yet: %s", order.Number)
-			return
+			return nil
 
 		case errors.Is(err, apperrors.ErrTooManyRequests):
 			w.log.Warnf("rate limited, retry after %s", res.RetryAfter)
 			w.setPause(res.RetryAfter)
-			return
+		case errors.Is(err, apperrors.ErrInternalServer):
+			w.log.Warnf("internal server error: %s", order.Number)
+			return nil
 
 		default:
 			w.log.Errorw("accrual request failed",
 				"order", order.Number,
 				"err", err,
 			)
-			return
+			return nil
 		}
 	}
 
@@ -136,6 +141,7 @@ func (w *Worker) processOrder(ctx context.Context, order models.Order) {
 			"err", err,
 		)
 	}
+	return nil
 }
 
 func (w *Worker) setPause(d time.Duration) {

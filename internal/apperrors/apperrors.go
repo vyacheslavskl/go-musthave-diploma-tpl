@@ -12,4 +12,5 @@ var (
 	ErrTooManyRequests             = errors.New("too many requests")
 	ErrOrderNotFound               = errors.New("order not found")
 	ErrInvalidCredentials          = errors.New("invalid credentials")
+	ErrInternalServer              = errors.New("internal server error")
 )
